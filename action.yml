@@ -1,5 +1,8 @@
 name: 'o2switch Whitelisting'
 description: 'Add the runner IP in your o2switch whitelist for later remote access.'
+branding:
+  icon: 'server'
+  color: 'white'
 
 inputs:
   otp_secret:
