@@ -43,20 +43,20 @@ runs:
       run: |
         OTP=$(oathtool -b --totp '${{ inputs.otp_secret }}')
         echo "Remove all whitelisted IPs..."
-        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: ${{ inputs.otp_secret }}" \
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: $OTP" \
           'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/remove_all'
 
         echo "Whitelisting the runner IP"
-        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: ${{ inputs.otp_secret }}" \
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: $OTP" \
           'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/add?address=${{ steps.ip.outputs.ipv4 }}&port=22'
 
         echo "Checking if the IP is whitelisted..."
-        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: ${{ inputs.otp_secret }}" \
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: $OTP" \
           'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/list' | grep ${{ steps.ip.outputs.ipv4 }}
 
         echo "Whitelisting the keeping IP if provided..."
         if [ -n "${{ inputs.ip_to_keep }}" ]; then
-          curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: ${{ inputs.otp_secret }}" \
+          curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: $OTP" \
             'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/add?address=${{ inputs.ip_to_keep }}&port=22'
         fi
     
