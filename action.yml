@@ -12,11 +12,11 @@ inputs:
   o2switch_username:
     description: 'The o2switch username.'
     required: true
-  o2switch_password:
-    description: 'The o2switch password.'
-    required: true
   o2switch_host:
     description: 'The o2switch host.'
+    required: true
+  o2switch_api_token:
+    description: 'The o2switch API token for authentication.'
     required: true
   ip_to_keep:
     description: 'The IP to keep in the whitelist.'
@@ -41,49 +41,43 @@ runs:
       shell: bash
       if: ${{ inputs.otp_secret != null }}
       run: |
-        ENDPOINT='https://${{ inputs.o2switch_host }}:2083/frontend/o2switch/o2switch-ssh-whitelist/index.live.php'
         OTP=$(oathtool -b --totp '${{ inputs.otp_secret }}')
-        AUTH_STR="Basic $(echo -n '${{ inputs.o2switch_username }}:${{ inputs.o2switch_password }}' | base64)"
+        echo "Remove all whitelisted IPs..."
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: ${{ inputs.otp_secret }}" \
+          'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/remove_all'
 
-        echo "Get actual whitelisted IPs..."
-        UNIQUE_IPS=$(curl -H "Authorization: $AUTH_STR" -H "X-CPANEL-OTP: $OTP" -sX GET "$ENDPOINT?r=list" | jq -r '.data.list[] | .address' | sort -u)
-        for address in $UNIQUE_IPS; do
-          if [[ $address == "$#{{ inputs.ip_to_keep }}" ]]; then
-              echo "Keep this IP, go to the next..."
-              continue
-          fi
-          echo "Delete this github IP: $address (in & out)"
-          curl -H "Authorization: $AUTH_STR" -H "X-CPANEL-OTP: $OTP" -sX GET "$ENDPOINT?r=remove&address=$address&direction=in&port=22" | jq
-          sleep 3
-          curl -H "Authorization: $AUTH_STR" -H "X-CPANEL-OTP: $OTP" -sX GET "$ENDPOINT?r=remove&address=$address&direction=out&port=22" | jq
-          sleep 3
-        done
-        echo "All non-whitelisted IPs deleted!"
+        echo "Whitelisting the runner IP"
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: ${{ inputs.otp_secret }}" \
+          'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/add?address=${{ steps.ip.outputs.ipv4 }}&port=22'
 
-        echo "Attempt to whitelist IP..."
-        curl -H "Authorization: $AUTH_STR" -H "X-CPANEL-OTP: $OTP" -sX POST -d 'whitelist[address]=${{ steps.ip.outputs.ipv4 }}' -d 'whitelist[port]=22' "$ENDPOINT?r=add" | jq
+        echo "Checking if the IP is whitelisted..."
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: ${{ inputs.otp_secret }}" \
+          'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/list' | grep ${{ steps.ip.outputs.ipv4 }}
 
+        echo "Whitelisting the keeping IP if provided..."
+        if [ -n "${{ inputs.ip_to_keep }}" ]; then
+          curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' -H "X-CPANEL-OTP: ${{ inputs.otp_secret }}" \
+            'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/add?address=${{ inputs.ip_to_keep }}&port=22'
+        fi
+    
     - name: Whitelist IP on hosting & delete github old ones without 2FA
       shell: bash
       if: ${{ inputs.otp_secret == null }}
       run: |
-        URL_ENCODED_PASSWORD=$(echo -n "${{ inputs.o2switch_password }}" | jq -sRr @uri)
-        ENDPOINT="https://${{ inputs.o2switch_username }}:$URL_ENCODED_PASSWORD@${{ inputs.o2switch_host }}:2083/frontend/o2switch/o2switch-ssh-whitelist/index.live.php"
+        echo "Remove all whitelisted IPs..."
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' \
+          'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/remove_all'
 
-        echo "Get actual whitelisted IPs..."
-        UNIQUE_IPS=$(curl -sX GET "$ENDPOINT?r=list" | jq -r '.data.list[] | .address' | sort -u)
-        for address in $UNIQUE_IPS; do
-          if [[ $address == "$#{{ inputs.ip_to_keep }}" ]]; then
-              echo "Keep this IP, go to the next..."
-              continue
-          fi
-          echo "Delete this github IP: $address (in & out)"
-          curl -sX GET "$ENDPOINT?r=remove&address=$address&direction=in&port=22" | jq
-          sleep 3
-          curl -sX GET "$ENDPOINT?r=remove&address=$address&direction=out&port=22" | jq
-          sleep 3
-        done
-        echo "All non-whitelisted IPs deleted!"
+        echo "Whitelisting the runner IP"
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' \
+          'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/add?address=${{ steps.ip.outputs.ipv4 }}&port=22'
 
-        echo "Attempt to whitelist IP..."
-        curl -sX POST -d 'whitelist[address]=${{ steps.ip.outputs.ipv4 }}' -d 'whitelist[port]=22' "$ENDPOINT?r=add" | jq
+        echo "Checking if the IP is whitelisted..."
+        curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' \
+          'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/list' | grep ${{ steps.ip.outputs.ipv4 }}
+
+        echo "Whitelisting the keeping IP if provided..."
+        if [ -n "${{ inputs.ip_to_keep }}" ]; then
+          curl -sm 45 -H'Authorization: cpanel ${{ inputs.o2switch_username }}:${{ inputs.o2switch_api_token }}' \
+            'https://${{ inputs.o2switch_host }}:2083/execute/SshWhitelist/add?address=${{ inputs.ip_to_keep }}&port=22'
+        fi
