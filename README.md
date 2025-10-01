@@ -2,7 +2,7 @@
 Add the runner IP in your o2switch whitelist for later remote access.
 
 - Retrieve the runner IP (using [`haythem/public-ip@v1.3`](https://github.com/haythem/public-ip))
-- URL encode your password
+- Uses the `o2switch SshWhitelist API` (via cPanel API Token, no password needed)
 - Supports 2FA
 
 ## Input Options
@@ -10,15 +10,17 @@ Add the runner IP in your o2switch whitelist for later remote access.
 | Key                 | Required | Default | Description            |
 | ------------------- |--------- | ------- | ---------------------- |
 | `o2switch_username` | `true`   |         | The o2switch username. |
-| `o2switch_password` | `true`   |         | The o2switch password. |
+| `o2switch_api_token`| `true`   |         | The o2switch API token for authentication. |
 | `o2switch_host`     | `true`   |         | The o2switch host.     |
 | `otp_secret`        | `false`  | `null`  | The OTP secret if it is enabled the o2switch account. |
 | `ip_to_keep`        | `false`  | `''`    | The IP to keep in the whitelist. |
 
-### `o2switch_password`
+### `o2switch_api_token`
 
-⚠️ If you don't have 2FA enabled on your o2switch account, then you may know you must URL encode your password.
-Hopefully, this action takes care of this for you, so you can leave your real password in the `o2switch_password` input.
+Provide an API token generated from your o2switch cPanel for authentication.  
+You can create and manage API tokens in your cPanel under "Manage API Tokens".  
+
+For more details, see the [o2switch documentation](https://faq.o2switch.fr/cpanel/securite/token-api-cpanel/).
 
 ## Example workflow
 
@@ -38,7 +40,7 @@ jobs:
         with:
           otp_secret: ${{ secrets.O2SWITCH_OTP_SECRET }}
           o2switch_username: ${{ secrets.O2SWITCH_USER }}
-          o2switch_password: ${{ secrets.O2SWITCH_PASSWORD }}
+          o2switch_api_token: ${{ secrets.O2SWITCH_API_TOKEN }}
           o2switch_host: ${{ secrets.O2SWITCH_HOST }}
 
       # Example deploy step
