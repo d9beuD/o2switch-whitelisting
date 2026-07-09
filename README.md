@@ -1,7 +1,7 @@
 # o2switch-whitelisting
 Add the runner IP in your o2switch whitelist for later remote access.
 
-- Retrieve the runner IP (using [`haythem/public-ip@v1.3`](https://github.com/haythem/public-ip))
+- Retrieve the runner IP (using a native `curl` command)
 - Uses the `o2switch SshWhitelist API` (via cPanel API Token, no password needed)
 - Supports 2FA
 
