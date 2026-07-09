@@ -28,7 +28,10 @@ runs:
   steps:
     - name: Getting runner public IP
       id: ip
-      uses: haythem/public-ip@v1.3
+      shell: bash
+      run: |
+        IPV4=$(curl -s https://api.ipify.org)
+        echo "ipv4=$IPV4" >> $GITHUB_OUTPUT
     
     - name: Installing tools for 2FA
       uses: tecolicom/actions-use-apt-tools@v1
